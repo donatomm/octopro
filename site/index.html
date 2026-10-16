@@ -24,7 +24,8 @@ main{max-width:1120px;margin:0 auto;padding:56px 24px 96px}
 .col{max-width:720px}
 .status{display:flex;align-items:center;gap:10px;font:600 15px/1.4 system-ui,sans-serif;color:var(--soft);margin-bottom:18px}
 .status::before{content:"";width:10px;height:10px;background:var(--red);flex:none}
-h1{font:800 clamp(28px,4.4vw,44px)/1.12 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.025em;max-width:22ch;margin-bottom:52px;text-wrap:balance}
+h1{font:800 clamp(24px,5.6vw,30px)/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.02em;margin-bottom:52px}
+@media(min-width:1000px){h1{font-size:clamp(26px,2.5vw,32px);white-space:nowrap}}
 .readings{list-style:none;margin:0;padding:0}
 .readings li{padding:30px 0;border-top:1px solid var(--rule)}
 .readings li:last-child{border-bottom:1px solid var(--rule)}
@@ -37,9 +38,9 @@ h1{font:800 clamp(28px,4.4vw,44px)/1.12 system-ui,-apple-system,"Segoe UI",sans-
 <body>
 <header class="site-bar"><div class="in"><a href="/"><img src="/assets/octopro-stacked-on-white.png" alt="OctoPro home" width="62" height="56"></a></div></header>
 <main>
+ <p class="status">Site under construction</p>
+ <h1>Here are a few readings I recommend, which also show my thinking</h1>
  <div class="col">
-  <p class="status">Site under construction</p>
-  <h1>Here are a few readings I recommend, which also show my thinking</h1>
 <!-- To add a reading, replace this comment with the block below, then add more <li> items as needed:
   <ul class="readings">
     <li><h2>Title</h2><p>One short sentence.</p><a class="button" href="/folder-name/">Read</a></li>
