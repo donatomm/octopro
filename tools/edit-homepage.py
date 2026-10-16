@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Local editor for the octopro.pro homepage reading list.
 
-Runs only on this Mac. Opens a page in the browser where readings can be
-added, edited, reordered and removed. "Publish" writes them into
+Runs only on this Mac. Opens the real homepage design in the browser in edit mode: click any
+text to change it; readings can be added, reordered and removed. "Publish" writes them into
 site/index.html, commits, and pushes to GitHub's main branch; Cloudflare
 then publishes octopro.pro within about a minute.
 
@@ -98,41 +98,56 @@ def publish(items):
     return "Published. octopro.pro updates in about a minute."
 
 
-EDITOR = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Edit homepage readings</title>
+EDIT_MODE = r"""
 <style>
-:root{--ink:#1c1c1c;--soft:#5c5c5c;--rule:#d9d9d9;--yellow:#f9cd57}
-*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,-apple-system,sans-serif;color:var(--ink);background:#f6f6f4}
-main{max-width:760px;margin:0 auto;padding:32px 20px 120px}h1{font-size:24px;margin:0 0 6px}.hint{color:var(--soft);margin:0 0 24px}
-.item{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:16px;margin:0 0 14px}
-.item label{display:block;font-weight:600;font-size:13px;margin:10px 0 4px}.item label:first-child{margin-top:0}
-input,textarea{width:100%;font:inherit;padding:8px 10px;border:1px solid #bbb;border-radius:6px}textarea{min-height:64px;resize:vertical}
-.row{display:flex;gap:8px;margin-top:12px}button{font:600 14px system-ui,sans-serif;padding:8px 14px;border-radius:10px;border:1px solid var(--ink);background:#fff;cursor:pointer}
-button.main{background:var(--yellow);border-color:var(--yellow)}button.danger{color:#a00;border-color:#a00}
-.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--rule);padding:12px 20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-#msg{white-space:pre-wrap;margin-top:16px;padding:12px;border-radius:8px;display:none}#msg.ok{display:block;background:#e7f6ea}#msg.err{display:block;background:#fde8e8}
-</style></head><body><main>
-<h1>Homepage readings</h1><p class="hint">Add, edit, reorder or remove items. Nothing changes on octopro.pro until you click <b>Publish</b>.</p>
-<div id="list"></div><button onclick="add()">+ Add a reading</button><div id="msg"></div></main>
-<div class="bar"><button onclick="preview()">Preview</button><button class="main" onclick="pub()">Publish to octopro.pro</button></div>
+body{padding-bottom:110px}
+.em-note{background:#1c1c1c;color:#fff;font:600 14px system-ui,sans-serif;padding:10px 24px;text-align:center}
+[contenteditable]{outline:1px dashed transparent;outline-offset:4px;border-radius:2px}
+[contenteditable]:hover{outline-color:#bbb}[contenteditable]:focus{outline:2px dashed #1c1c1c}
+[contenteditable]:empty::before{content:attr(data-ph);color:#aaa}
+.em-link{display:flex;gap:8px;align-items:center;margin-top:12px;font:13px system-ui,sans-serif;color:#5c5c5c}
+.em-link input{flex:1;font:13px system-ui,sans-serif;padding:6px 8px;border:1px solid #ccc;border-radius:6px}
+.em-ctrls{display:flex;gap:6px;margin-top:10px}
+.em-ctrls button,.em-bar button{font:600 13px system-ui,sans-serif;padding:6px 12px;border-radius:8px;border:1px solid #1c1c1c;background:#fff;cursor:pointer}
+.em-ctrls .rm{color:#a00;border-color:#a00}
+.em-bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #d9d9d9;padding:12px 24px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.em-bar .pub{background:#f9cd57;border-color:#f9cd57;font-size:15px;padding:9px 18px}
+#em-msg{font:14px system-ui,sans-serif;white-space:pre-wrap;max-width:520px}
+#em-msg.err{color:#a00}#em-msg.ok{color:#176b2c}
+</style>
 <script>
-let items=[];
-const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-function draw(){document.getElementById('list').innerHTML=items.map((it,i)=>`<div class="item">
-<label>Title</label><input value="${esc(it.title)}" oninput="items[${i}].title=this.value">
-<label>Short explanation</label><textarea oninput="items[${i}].summary=this.value">${esc(it.summary)}</textarea>
-<label>Link (https://... or /page/)</label><input value="${esc(it.href)}" oninput="items[${i}].href=this.value">
-<label>Button text</label><input value="${esc(it.label||'Read')}" oninput="items[${i}].label=this.value">
-<div class="row"><button onclick="move(${i},-1)">Up</button><button onclick="move(${i},1)">Down</button><button class="danger" onclick="del(${i})">Remove</button></div></div>`).join('')||'<p class="hint">No readings yet.</p>';}
-function add(){items.push({title:'',summary:'',href:'https://',label:'Read'});draw();}
-function move(i,d){const j=i+d;if(j<0||j>=items.length)return;[items[i],items[j]]=[items[j],items[i]];draw();}
-function del(i){items.splice(i,1);draw();}
-function say(t,ok){const m=document.getElementById('msg');m.textContent=t;m.className=ok?'ok':'err';m.scrollIntoView({block:'nearest'});}
-async function call(path){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(items)});return [r.ok,await r.text()];}
-async function preview(){const [ok,t]=await call('/api/preview');if(!ok)return say(t,false);window.open('/preview/','_blank');}
-async function pub(){if(!confirm('Publish these readings to octopro.pro now?'))return;say('Publishing...',true);const [ok,t]=await call('/api/publish');say(t,ok);}
-fetch('/api/items').then(r=>r.json()).then(d=>{items=d;draw();}).catch(e=>say('Could not load items: '+e,false));
-</script></body></html>"""
+(function(){
+  document.body.insertAdjacentHTML('afterbegin','<div class="em-note">EDIT MODE. Click + Add a reading at the bottom, then click its text to type. Nothing goes live until you click Publish.</div>');
+  document.body.insertAdjacentHTML('beforeend','<div class="em-bar"><button id="em-add">+ Add a reading</button><button class="pub" id="em-pub">Publish to octopro.pro</button><span id="em-msg"></span></div>');
+  const col=document.querySelector('main .col');
+  const ul=document.createElement('ul');ul.className='readings';col.appendChild(ul);
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let items=[];
+  function grab(){items=[...ul.children].map(li=>({
+    title:li.querySelector('h2').textContent.trim(),
+    summary:li.querySelector('p').textContent.trim(),
+    label:li.querySelector('.button').textContent.trim()||'Read',
+    href:li.querySelector('.em-link input').value.trim()}));}
+  function draw(){ul.innerHTML=items.map((it,i)=>'<li>'+
+    '<h2 contenteditable="plaintext-only" data-ph="Title">'+esc(it.title)+'</h2>'+
+    '<p contenteditable="plaintext-only" data-ph="Short explanation">'+esc(it.summary)+'</p>'+
+    '<span class="button" contenteditable="plaintext-only" data-ph="Read">'+esc(it.label)+'</span>'+
+    '<div class="em-link">Button opens: <input value="'+esc(it.href)+'" placeholder="https://... or /page/"></div>'+
+    '<div class="em-ctrls"><button data-a="up" data-i="'+i+'">Up</button><button data-a="down" data-i="'+i+'">Down</button><button class="rm" data-a="rm" data-i="'+i+'">Remove</button></div>'+
+    '</li>').join('');}
+  ul.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;grab();const i=+b.dataset.i;
+    if(b.dataset.a==='rm')items.splice(i,1);
+    if(b.dataset.a==='up'&&i>0)[items[i-1],items[i]]=[items[i],items[i-1]];
+    if(b.dataset.a==='down'&&i<items.length-1)[items[i+1],items[i]]=[items[i],items[i+1]];
+    draw();});
+  const say=(t,ok)=>{const m=document.getElementById('em-msg');m.textContent=t;m.className=ok?'ok':'err';};
+  document.getElementById('em-add').onclick=()=>{grab();items.push({title:'',summary:'',label:'Read',href:'https://'});draw();ul.lastElementChild.querySelector('h2').focus();};
+  document.getElementById('em-pub').onclick=async()=>{grab();if(!confirm('Publish '+items.length+' reading(s) to octopro.pro now?'))return;say('Publishing...',true);
+    const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(items)});say(await r.text(),r.ok);};
+  fetch('/api/items').then(r=>r.json()).then(d=>{items=d;draw();}).catch(e=>say('Could not load: '+e,false));
+})();
+</script>
+"""
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -148,7 +163,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/":
-            return self.send(200, EDITOR, "text/html; charset=utf-8")
+            page = render_page([]).replace("</body>", EDIT_MODE + "</body>", 1)
+            return self.send(200, page, "text/html; charset=utf-8")
         if self.path == "/api/items":
             try:
                 return self.send(200, json.dumps(read_items()), "application/json")
