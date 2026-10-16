@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Site under construction | OctoPro</title>
 <meta name="description" content="Site under construction. A few readings I recommend, which also show my thinking.">
 <link rel="canonical" href="https://octopro.pro/">
@@ -11,101 +11,41 @@
 <meta property="og:title" content="Site under construction | OctoPro">
 <meta property="og:description" content="Site under construction. A few readings I recommend, which also show my thinking.">
 <style>
-/* INTERIM STYLE. All visual decisions live in this block, so a new design
-   replaces this block and nothing else. System fonts only: nothing is fetched. */
-:root {
-	--bg: #ffffff;
-	--ink: #14181f;
-	--ink-soft: #4a5565;
-	--hair: #dfe3ea;
-	--accent: #1f3bd8;
-	--accent-ink: #ffffff;
-}
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg: #0e1116;
-		--ink: #eef1f6;
-		--ink-soft: #a9b3c3;
-		--hair: #2a313c;
-		--accent: #8ea2ff;
-		--accent-ink: #0e1116;
-	}
-}
-body {
-	margin: 0;
-	background: var(--bg);
-	color: var(--ink);
-	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-	font-size: 19px;
-	line-height: 1.6;
-	overflow-wrap: break-word;
-}
-main {
-	max-width: 40rem;
-	margin: 0 auto;
-	padding: 4rem 16px 5rem;
-}
-h1 {
-	font-size: clamp(2rem, 6vw, 2.75rem);
-	line-height: 1.15;
-	margin: 0 0 2.5rem;
-}
-h2 {
-	font-size: 1.2rem;
-	line-height: 1.4;
-	font-weight: 400;
-	color: var(--ink-soft);
-	margin: 0 0 1.5rem;
-	padding-top: 1.5rem;
-	border-top: 1px solid var(--hair);
-}
-.readings {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-.readings li {
-	padding: 1.25rem 0;
-	border-bottom: 1px solid var(--hair);
-}
-.readings h3 {
-	font-size: 1.15rem;
-	line-height: 1.3;
-	margin: 0 0 0.35rem;
-}
-.readings p {
-	margin: 0 0 0.9rem;
-	color: var(--ink-soft);
-}
-.button {
-	display: inline-block;
-	padding: 0.45rem 1rem;
-	background: var(--accent);
-	color: var(--accent-ink);
-	border-radius: 4px;
-	text-decoration: none;
-	font-weight: 700;
-	font-size: 0.95rem;
-}
-.button:hover,
-.button:focus-visible {
-	text-decoration: underline;
-}
+/* All visual decisions live in this block. System fonts only: nothing is fetched from other sites. */
+:root{color-scheme:light;--ink:#1c1c1c;--red:#e0212b;--red-soft:#f4b8bb;--soft:#5c5c5c;--rule:#d9d9d9;--paper:#fff}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:18px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,p{margin:0}
+a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.site-bar{border-bottom:1px solid var(--rule)}
+.site-bar .in{max-width:1120px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
+.site-bar img{height:56px;width:auto;display:block}
+main{max-width:1120px;margin:0 auto;padding:56px 24px 96px}
+.col{max-width:720px}
+.status{display:flex;align-items:center;gap:10px;font:600 15px/1.4 system-ui,sans-serif;color:var(--soft);margin-bottom:18px}
+.status::before{content:"";width:10px;height:10px;background:var(--red);flex:none}
+h1{font:800 clamp(28px,4.4vw,44px)/1.12 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.025em;max-width:22ch;margin-bottom:52px;text-wrap:balance}
+.readings{list-style:none;margin:0;padding:0}
+.readings li{padding:30px 0;border-top:1px solid var(--rule)}
+.readings li:last-child{border-bottom:1px solid var(--rule)}
+.readings h2{font:700 25px/1.25 system-ui,sans-serif;letter-spacing:-.015em;margin-bottom:10px}
+.readings p{font:19px/1.7 Georgia,"Times New Roman",serif;color:#333;margin-bottom:18px}
+.button{display:inline-block;padding:7px 18px;background:var(--red-soft);color:var(--ink);border:0;border-radius:2px;font:600 14px system-ui,sans-serif;text-decoration:none}
+.button:hover{background:var(--red);color:#fff}
 </style>
 </head>
 <body>
+<header class="site-bar"><div class="in"><a href="/"><img src="/assets/octopro-stacked-on-white.png" alt="OctoPro home" width="62" height="56"></a></div></header>
 <main>
-<h1>Site under construction</h1>
-<h2>Here are a few readings I recommend, which also show my thinking</h2>
-<!-- To add a reading, paste this block below (inside a <ul class="readings"> once there is a first one):
-<ul class="readings">
-	<li>
-		<h3>Title</h3>
-		<p>One short sentence.</p>
-		<a class="button" href="/folder-name/">Read</a>
-	</li>
-</ul>
+ <div class="col">
+  <p class="status">Site under construction</p>
+  <h1>Here are a few readings I recommend, which also show my thinking</h1>
+<!-- To add a reading, replace this comment with the block below, then add more <li> items as needed:
+  <ul class="readings">
+    <li><h2>Title</h2><p>One short sentence.</p><a class="button" href="/folder-name/">Read</a></li>
+  </ul>
 -->
+ </div>
 </main>
 </body>
 </html>
