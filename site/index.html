@@ -20,6 +20,8 @@ a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .site-bar{border-bottom:1px solid var(--rule)}
 .site-bar .in{max-width:1120px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
 .site-bar img{height:56px;width:auto;display:block}
+.edit-btn{display:inline-block;padding:6px 14px;background:var(--yellow);color:var(--ink);border-radius:10px;font:700 14px system-ui,sans-serif;text-decoration:none}
+.edit-btn[hidden]{display:none}
 main{max-width:1120px;margin:0 auto;padding:56px 24px 96px}
 .col{max-width:720px}
 .status{display:inline-block;padding:10px 22px;background:var(--yellow);color:var(--ink);border-radius:10px;font:700 15px system-ui,sans-serif;text-decoration:none;margin-bottom:22px}
@@ -35,7 +37,8 @@ h1{font:800 clamp(24px,5.6vw,30px)/1.2 system-ui,-apple-system,"Segoe UI",sans-s
 </style>
 </head>
 <body>
-<header class="site-bar"><div class="in"><a href="/"><img src="/assets/octopro-stacked-on-white.png" alt="OctoPro home" width="62" height="56"></a></div></header>
+<header class="site-bar"><div class="in"><a href="/"><img src="/assets/octopro-stacked-on-white.png" alt="OctoPro home" width="62" height="56"></a><a class="edit-btn" href="/edit/" hidden>Edit</a></div></header>
+<script>try{if(localStorage.getItem("octopro-editor")==="1")document.querySelector(".edit-btn").hidden=false}catch(e){}</script>
 <main>
  <p class="status">Site under construction</p>
  <h1>Here are a few readings I recommend, which also show my thinking</h1>

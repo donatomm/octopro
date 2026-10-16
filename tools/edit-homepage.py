@@ -21,6 +21,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 INDEX = REPO / "site" / "index.html"
 PORT = 8790
+ALLOWED_HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
+ALLOWED_ORIGINS = {f"http://{h}" for h in ALLOWED_HOSTS}
 START = re.compile(r"(<!-- READINGS:START[^>]*-->)(.*?)(<!-- READINGS:END -->)", re.S)
 ITEM = re.compile(
     r'<li><h2>(.*?)</h2><p>(.*?)</p><a class="button" href="(.*?)">(.*?)</a></li>', re.S
@@ -161,7 +163,16 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def host_ok(self):
+        # Refuse requests addressed to any other host name (blocks DNS-rebinding attacks).
+        if self.headers.get("Host") in ALLOWED_HOSTS:
+            return True
+        self.send(403, "Forbidden")
+        return False
+
     def do_GET(self):
+        if not self.host_ok():
+            return
         if self.path == "/":
             page = render_page([]).replace("</body>", EDIT_MODE + "</body>", 1)
             return self.send(200, page, "text/html; charset=utf-8")
@@ -179,6 +190,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, "Not found")
 
     def do_POST(self):
+        # Only this editor's own page may save or publish. A browser always sends
+        # Origin on POST, so a request from any other website is refused here.
+        if not self.host_ok():
+            return
+        if self.headers.get("Origin") not in ALLOWED_ORIGINS:
+            return self.send(403, "Forbidden: request did not come from the editor page.")
+        if not self.headers.get("Content-Type", "").startswith("application/json"):
+            return self.send(415, "Expected JSON.")
         try:
             items = validate(json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
             if self.path == "/api/preview":
