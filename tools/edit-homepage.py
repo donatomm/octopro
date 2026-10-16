@@ -24,6 +24,7 @@ PORT = 8790
 ALLOWED_HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 ALLOWED_ORIGINS = {f"http://{h}" for h in ALLOWED_HOSTS}
 START = re.compile(r"(<!-- READINGS:START[^>]*-->)(.*?)(<!-- READINGS:END -->)", re.S)
+NAME = re.compile(r'(<span class="owner-name">)(.*?)(</span>)', re.S)
 ITEM = re.compile(
     r'<li><h2>(.*?)</h2><p>(.*?)</p><a class="button" href="(.*?)">(.*?)</a></li>', re.S
 )
@@ -34,8 +35,14 @@ def git(*args):
     return r.returncode, (r.stdout + r.stderr).strip()
 
 
-def read_items():
-    m = START.search(INDEX.read_text(encoding="utf-8"))
+def read_state():
+    page = INDEX.read_text(encoding="utf-8")
+    n = NAME.search(page)
+    return {"name": html.unescape(n.group(2)) if n else "", "items": read_items(page)}
+
+
+def read_items(page=None):
+    m = START.search(page or INDEX.read_text(encoding="utf-8"))
     if not m:
         raise RuntimeError("Markers READINGS:START / READINGS:END not found in site/index.html")
     return [
@@ -57,12 +64,24 @@ def render_block(items):
     return '\n  <ul class="readings">\n' + rows + "\n  </ul>\n"
 
 
-def render_page(items):
+def render_page(items, name=None):
     page = INDEX.read_text(encoding="utf-8")
-    return START.sub(lambda m: m.group(1) + render_block(items) + m.group(3), page, count=1)
+    page = START.sub(lambda m: m.group(1) + render_block(items) + m.group(3), page, count=1)
+    if name is not None:
+        page = NAME.sub(lambda m: m.group(1) + html.escape(name) + m.group(3), page, count=1)
+    return page
 
 
-def validate(items):
+def validate(state):
+    if not isinstance(state, dict):
+        raise ValueError("Unexpected data from the editor page.")
+    name = str(state.get("name", "")).strip()
+    if not name:
+        raise ValueError("The name in the top bar is empty.")
+    return {"name": name, "items": validate_items(state.get("items", []))}
+
+
+def validate_items(items):
     out = []
     for n, i in enumerate(items, 1):
         item = {k: str(i.get(k, "")).strip() for k in ("title", "summary", "href", "label")}
@@ -75,7 +94,8 @@ def validate(items):
     return out
 
 
-def publish(items):
+def publish(state):
+    items, name = state["items"], state["name"]
     code, branch = git("rev-parse", "--abbrev-ref", "HEAD")
     if branch != "main":
         raise RuntimeError(f"The repo is on branch '{branch}', not main. Nothing was published.")
@@ -85,12 +105,12 @@ def publish(items):
     code, out = git("pull", "--ff-only", "origin", "main")
     if code:
         raise RuntimeError("Could not update from GitHub first. Nothing was published.\n" + out)
-    INDEX.write_text(render_page(items), encoding="utf-8")
+    INDEX.write_text(render_page(items, name), encoding="utf-8")
     code, diff = git("status", "--porcelain", "--", "site/index.html")
     if not diff:
         return "No changes: the homepage already shows these readings."
     git("add", "site/index.html")
-    code, out = git("commit", "-m", f"Update homepage readings ({len(items)} items)")
+    code, out = git("commit", "-m", f"Update homepage ({len(items)} readings)")
     if code:
         raise RuntimeError("Commit failed.\n" + out)
     code, out = git("push", "origin", "main")
@@ -119,12 +139,12 @@ body{padding-bottom:110px}
 </style>
 <script>
 (function(){
-  document.body.insertAdjacentHTML('afterbegin','<div class="em-note">EDIT MODE. Click + Add a reading at the bottom, then click its text to type. Nothing goes live until you click Publish.</div>');
+  document.body.insertAdjacentHTML('afterbegin','<div class="em-note">EDIT MODE. Click your name or any reading to type. + Add a reading is at the bottom. Nothing goes live until you click Publish.</div>');
   document.body.insertAdjacentHTML('beforeend','<div class="em-bar"><button id="em-add">+ Add a reading</button><button class="pub" id="em-pub">Publish to octopro.pro</button><span id="em-msg"></span></div>');
   const col=document.querySelector('main .col');
   const ul=document.createElement('ul');ul.className='readings';col.appendChild(ul);
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  let items=[];
+  let items=[];const nameEl=document.querySelector('.owner-name');nameEl.setAttribute('contenteditable','plaintext-only');nameEl.dataset.ph='Your name';
   function grab(){items=[...ul.children].map(li=>({
     title:li.querySelector('h2').textContent.trim(),
     summary:li.querySelector('p').textContent.trim(),
@@ -145,8 +165,8 @@ body{padding-bottom:110px}
   const say=(t,ok)=>{const m=document.getElementById('em-msg');m.textContent=t;m.className=ok?'ok':'err';};
   document.getElementById('em-add').onclick=()=>{grab();items.push({title:'',summary:'',label:'Read',href:'https://'});draw();ul.lastElementChild.querySelector('h2').focus();};
   document.getElementById('em-pub').onclick=async()=>{grab();if(!confirm('Publish '+items.length+' reading(s) to octopro.pro now?'))return;say('Publishing...',true);
-    const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(items)});say(await r.text(),r.ok);};
-  fetch('/api/items').then(r=>r.json()).then(d=>{items=d;draw();}).catch(e=>say('Could not load: '+e,false));
+    const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameEl.textContent.trim(),items})});say(await r.text(),r.ok);};
+  fetch('/api/items').then(r=>r.json()).then(d=>{items=d.items;nameEl.textContent=d.name;draw();}).catch(e=>say('Could not load: '+e,false));
 })();
 </script>
 """
@@ -178,7 +198,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, page, "text/html; charset=utf-8")
         if self.path == "/api/items":
             try:
-                return self.send(200, json.dumps(read_items()), "application/json")
+                return self.send(200, json.dumps(read_state()), "application/json")
             except Exception as e:
                 return self.send(500, str(e))
         if self.path == "/preview/":
@@ -199,12 +219,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self.headers.get("Content-Type", "").startswith("application/json"):
             return self.send(415, "Expected JSON.")
         try:
-            items = validate(json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
+            state = validate(json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
             if self.path == "/api/preview":
-                Handler.draft = render_page(items)
+                Handler.draft = render_page(state["items"], state["name"])
                 return self.send(200, "ok")
             if self.path == "/api/publish":
-                return self.send(200, publish(items))
+                return self.send(200, publish(state))
             self.send(404, "Not found")
         except Exception as e:
             self.send(400, str(e))
